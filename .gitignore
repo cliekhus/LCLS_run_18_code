@@ -6,3 +6,4 @@ $ cat .gitignore
 *.docx
 *.bmp
 /__pycache__
+/.ipynb_checkpoints
