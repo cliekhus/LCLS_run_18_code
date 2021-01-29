@@ -6,46 +6,8 @@ Created on Wed May 13 16:06:55 2020
 """
 
 import numpy as np
-import plot_electron_cascade as pec
 from make_electronic_states import make_elec_states
 import pickle
-
-
-TOTAL_TIME = 2 #fs
-DT = .0001 #fs
-
-if True:
-    ES, M = make_elec_states(True)
-else:
-    with open("electronic_states.pkl", "rb") as f:
-        ES = pickle.load(f)
-    with open("decay_pathway.pkl", "rb") as f:
-        M = pickle.load(f)
-
-size = int(np.max(M[:,1]) + 1)
-
-
-M[list(range(19)),2] = .4/.3*19
-M[[-1,-2], 2] = .4/.7*2
-#M[21,2] = 10
-
-def main():
-    
-    psi = make_psi_0()
-    
-    U = make_U(size, DT)
-    psi_t = np.empty((size, int(TOTAL_TIME/DT)))
-    
-    for tt in range(int(TOTAL_TIME/DT)):
-        psi = U.dot(psi)
-        psi_t[:, tt] = psi
-        
-    print('The final probability distribution is: ')
-    print(psi)
-    
-    #pec.plot_state_prob(psi_t, TOTAL_TIME, DT, ES)
-    
-    return psi
 
 
 def coupling_term(i, j, coeff, size): #coeff in fs^-1
@@ -58,26 +20,60 @@ def coupling_term(i, j, coeff, size): #coeff in fs^-1
     return delta_U
 
 
-def make_U(size, dt): #dt in fs
+def make_U(M, size, dt): #dt in fs
     
     U = np.eye(size)
     
     for line in M:
+        #dt/line[2]*line[3]
 
         U += coupling_term(int(line[0]), int(line[1]), dt/line[2]*line[3], size)
-        #print(line[3])
         
     return U
 
 
-def make_psi_0():
+def make_psi_0(size):
     psi = np.zeros((size))
     psi[0] = 1
     
     return psi
     
 
-psi = main()
-
-#if __name__ == '__main__':
-#    main()
+def main(run_new_es):
+        
+    
+    TOTAL_TIME = 1 #fs
+    DT = .001 #fs
+    
+    if run_new_es:
+        ES, M = make_elec_states(True)
+    else:
+        with open("electronic_states.pkl", "rb") as f:
+            ES = pickle.load(f)
+        with open("decay_pathway.pkl", "rb") as f:
+            M = pickle.load(f)
+    
+    Y = np.array([1.14,1.12,1.12,1.02,1.01,1.01,1,1.14,1.14,1.04,1.03,1.03,1.02,1.02,1.14,1.04,1.03,1.03,1.02,1.02,1.14,1.13,1.13,1.12,1.14,1.14,1.13,1.13,1.14,1.13,1.13])
+    #Y = 6/Y
+    M[:,2] = Y
+    
+    size = int(np.max(M[:,1]) + 1)
+    
+    psi = make_psi_0(size)
+    
+    U = make_U(M, size, DT)
+    psi_t = np.empty((size, int(TOTAL_TIME/DT)))
+    
+    psi_t[:,0] = psi
+    
+    for tt in range(int(TOTAL_TIME/DT-1)):
+        psi = U.dot(psi)
+        psi_t[:, tt+1] = psi
+    
+    import plot_electron_cascade as pec
+    
+    pec.plot_charge_prob(psi_t, TOTAL_TIME, DT, ES)
+    
+    pec.plot_distribution(psi, ES)
+    
+    return psi, ES, M

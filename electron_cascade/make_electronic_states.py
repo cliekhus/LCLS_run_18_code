@@ -38,7 +38,7 @@ def make_elec_states(save):
     
     electronic_states = np.empty((1,np.size(initial_state,0)))
     electronic_states[0,:] = initial_excitation
-    decay_pathway = np.empty((0,4))
+
     e_index = 0
     for kk in range(np.size(initial_excitation)):
         e_index = e_index + 10**kk*abs(initial_excitation[-(kk+1)])
@@ -63,7 +63,29 @@ def make_elec_states(save):
                     
                 e_index = np.concatenate((e_index, np.array([e_in])))
                 
-                decay_pathway = np.vstack((decay_pathway, np.array([ii, np.size(electronic_states,0), HBAR/np.dot(widths,np.abs(processes[jj,:])), 0])))
+                index1 = np.where(processes[jj,:]==1)
+                num1 = initial_state[index1]+electronic_states[ii,index1]
+                
+                if np.any(processes[jj,:]<-1):
+
+                    index2 = np.where(processes[jj,:]==-2)
+                    num2 = initial_state[index2]+electronic_states[ii,index2]
+                    mult = num1*num2*(num2-1)
+                    if ii == 0 and jj == 0:
+                        decay_pathway = np.array([ii, np.size(electronic_states,0)-1, HBAR/np.dot(widths,np.abs(processes[jj,:])), int(mult[0])])
+                    else:
+                        decay_pathway = np.vstack((decay_pathway, np.array([ii, np.size(electronic_states,0)-1, HBAR/np.dot(widths,np.abs(processes[jj,:])), int(mult[0])])))
+                    
+                else:
+                    
+                    index2 = np.where(processes[jj,:]==-1)
+                    num2 = initial_state[index2]+electronic_states[ii,index2]
+                    mult = num1*np.prod(num2)
+                    if ii == 0 and jj == 0:
+                        decay_pathway = np.array([ii, np.size(electronic_states,0)-1, HBAR/np.dot(widths,np.abs(processes[jj,:])), int(mult[0])])
+                    else:
+                        decay_pathway = np.vstack((decay_pathway, np.array([ii, np.size(electronic_states,0)-1, HBAR/np.dot(widths,np.abs(processes[jj,:])), int(mult[0])])))
+                    
     
         ii += 1
             
